@@ -3,15 +3,20 @@ import streamlit as st
 from pathlib import Path
 import pandas as pd
 import pydeck as pdk
+import base64
+import mimetypes
+from urllib.parse import quote
 
 st.set_page_config(
-    page_title="HIGH HOPE! | Experience Passport",
-    page_icon="✨",
+    page_title="STAMP-UP! | Experience Passport",
+    page_icon="⭐",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 ASSET = Path(__file__).parent / "assets" / "passport_cover.png"
+REWARDS_CSV = Path(__file__).parent / "data" / "rewards.csv"
+REWARD_ASSET_DIR = Path(__file__).parent / "assets" / "rewards"
 
 st.markdown("""
 <style>
@@ -70,8 +75,48 @@ st.markdown("""
         border-radius:24px;
         padding:1.25rem 1.3rem;
         box-shadow:0 10px 30px rgba(23,62,98,.07);
-        height:100%;
+        height:330px;
     }
+    .why-card {
+    background: rgba(255,255,255,.93);
+    border: 1px solid #e0eaf2;
+    border-radius: 24px;
+    padding: 1.25rem 1.3rem;
+    box-shadow: 0 10px 30px rgba(23,62,98,.07);
+
+    min-height: 300px;
+    height: 300px;
+
+    display: flex;
+    flex-direction: column;
+    }
+
+    .experience-card {
+    background: rgba(255,255,255,.93);
+    border: 1px solid #e0eaf2;
+    border-radius: 24px;
+    padding: 1.25rem 1.3rem;
+    box-shadow: 0 10px 30px rgba(23,62,98,.07);
+
+    height: 220px;
+
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+    }
+
+    .experience-card h3 {
+        min-height: 48px;
+        margin-bottom: 10px;
+    }
+
+    .experience-card .small {
+        margin: 0;
+        line-height: 1.5;
+    }
+
+
+
     .step {
         border-left:5px solid #f7b500;
         padding-left:1rem;
@@ -120,6 +165,79 @@ st.markdown("""
         color:#0d5798;
     }
     .small { color:#5a7087; font-size:.95rem; }
+
+    header[data-testid="stHeader"] { display: none; }
+    div[data-testid="stToolbar"] { display: none; }
+    #MainMenu { visibility: hidden; }
+
+    .reward-card {
+        background: rgba(255,255,255,.96);
+        border: 1px solid #e1ebf3;
+        border-radius: 20px;
+        padding: 1rem 1.05rem;
+        margin-bottom: 16px;
+        box-shadow: 0 7px 22px rgba(23,62,98,.06);
+
+        height: 360px;
+
+        display: flex;
+        flex-direction: column;
+    }
+    .reward-points {
+        display: inline-block;
+        background: #ffd54f;
+        color: #0d3b66;
+        font-weight: 900;
+        font-size: 1rem;
+        padding: .32rem .7rem;
+        border-radius: 999px;
+        margin-bottom: .55rem;
+    }
+    .tier-badge {
+        float: right;
+        font-size: .72rem;
+        font-weight: 800;
+        letter-spacing: .06em;
+        color: #48647f;
+        background: #edf5fb;
+        padding: .28rem .52rem;
+        border-radius: 999px;
+    }
+    .reward-title {
+        font-weight: 850;
+        color: #143f68;
+        line-height: 1.3;
+        margin-top: .1rem;
+    }
+    .reward-details {
+        color: #687d91;
+        font-size: .88rem;
+        margin-top: .42rem;
+    }
+
+    .reward-image-wrap {
+        width: 100%;
+        min-height: 150px;
+        background: #f8fbfd;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: .5rem;
+        margin: .7rem 0 .8rem;
+        padding: .55rem;
+        overflow: hidden;
+    }
+    .reward-image-wrap img {
+        max-width: 100%;
+        max-height: 145px;
+        object-fit: contain;
+        border-radius: 10px;
+    }
+    .reward-image-wrap.multi img {
+        max-width: 48%;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -129,14 +247,14 @@ left, right = st.columns([1.25, .75], gap="large")
 with left:
     st.markdown('<div class="hero-kicker">Barangay-based youth experience program</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="hero-title"><span>HIGH</span> <span>HOPE</span><span>!</span></div>',
+        '<div class="hero-title"><span>STAMP</span><span>-UP</span><span>!</span></div>',
         unsafe_allow_html=True
     )
     st.markdown(
         '<div class="hero-sub">'
-        'This project gives children opportunities to experience things they would not normally have the chance to try, '
+        'This project gives youth opportunities to experience things they would not normally have the chance to try, '
         'helping them discover their interests, strengths, and potential. It goes beyond career experiences and allows '
-        'children to collect a wide variety of experiences, including creativity, sports, leadership, and connections '
+        'youth to collect a wide variety of experiences, including creativity, sports, leadership, and connections '
         'with the local community.'
         '</div>',
         unsafe_allow_html=True,
@@ -151,33 +269,33 @@ with left:
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="big-quote">Collect experiences, not stamp.</div>',
+        '<div class="big-quote">Collect experiences, not coins.</div>',
         unsafe_allow_html=True,
     )
 
 with right:
     if ASSET.exists():
-        st.image(str(ASSET), caption="HIGH HOPE! Experience Passport", use_container_width=True)
+        st.image(str(ASSET), caption="STAMP-UP! Experience Passport", use_container_width=True)
     else:
         st.info("Passport cover image can be placed at assets/passport_cover.png")
 
 st.divider()
 
 # WHY
-st.header("Why HIGH HOPE!?")
+st.header("Why STAMP-UP!?")
 c1, c2, c3 = st.columns(3, gap="medium")
 with c1:
-    st.markdown("""<div class="card">
+    st.markdown("""<div class="why-card">
     <h3>🎁 More than rewards</h3>
-    <p>Instead of motivating children with coins or prizes, HIGH HOPE! uses curiosity itself — “What can I experience next?” — as the motivation.</p>
+    <p>Instead of motivating youth with stamps or prizes, STAMP-UP! uses curiosity itself — “What can I experience next?” — as the motivation.</p>
     </div>""", unsafe_allow_html=True)
 with c2:
-    st.markdown("""<div class="card">
+    st.markdown("""<div class="why-card">
     <h3>✨ Create opportunities to discover</h3>
-    <p>The program is not only for children who are already talented. New experiences help them discover unexpected interests and strengths.</p>
+    <p>The program is not only for youth who are already talented. New experiences help them discover unexpected interests and strengths.</p>
     </div>""", unsafe_allow_html=True)
 with c3:
-    st.markdown("""<div class="card">
+    st.markdown("""<div class="why-card">
     <h3>🤝 The whole community is the stage</h3>
     <p>The whole community becomes an Experience Field — including the Barangay Hall, companies, universities, shops, creators, and sports facilities.</p>
     </div>""", unsafe_allow_html=True)
@@ -205,7 +323,7 @@ st.divider()
 
 # EXPERIENCE CATEGORIES
 st.header("Not just career experience")
-st.caption("HIGH HOPE! is not only about learning about jobs. It is an Experience Program designed to expand a child’s world.")
+st.caption("STAMP-UP! is not only about learning about jobs. It is an Experience Program designed to expand a youth’s world.")
 
 cats = [
     ("🎨", "CREATE", "Art / Music / Cooking / Making"),
@@ -222,17 +340,141 @@ for row in rows:
     cols = st.columns(4, gap="small")
     for col, (icon, title, detail) in zip(cols, row):
         with col:
-            st.markdown(f"""<div class="card">
-            <div style="font-size:2rem">{icon}</div>
-            <h3>{title}</h3>
-            <p class="small">{detail}</p>
-            </div>""", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div class="experience-card">
+                <div style="font-size:2rem">{icon}</div>
+                <h3>{title}</h3>
+                <p class="small">{detail}</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-st.divider()
+
 
 # INTERACTIVE UNLOCK DEMO
 
+
+
+
+
+def reward_image_html(image_names):
+    if not image_names:
+        return ""
+    names = [name.strip() for name in str(image_names).split(";") if name.strip()]
+    if not names:
+        return ""
+
+    tags = []
+    for name in names:
+        image_path = REWARD_ASSET_DIR / name
+        if not image_path.exists():
+            continue
+        mime = mimetypes.guess_type(image_path.name)[0] or "image/jpeg"
+        encoded = base64.b64encode(image_path.read_bytes()).decode("ascii")
+        tags.append(
+            f'<img src="data:{mime};base64,{encoded}" alt="Reward preview">'
+        )
+
+    if not tags:
+        return ""
+
+    multi = " multi" if len(tags) > 1 else ""
+    return f'<div class="reward-image-wrap{multi}">' + "".join(tags) + "</div>"
+
+
+# REWARD WISH LIST
 st.divider()
+st.header("🎁 Reward Wish List")
+st.write(
+    "Experiences and self-discovery are the heart of STAMP-UP!. "
+    "Rewards are an extra motivation for youth who keep exploring."
+)
+
+rewards_df = pd.read_csv(REWARDS_CSV)
+
+current_points = st.slider(
+    "Check what you can redeem",
+    min_value=0,
+    max_value=int(rewards_df["Points"].max()),
+    value=25,
+    step=5,
+)
+
+available_df = rewards_df[rewards_df["Points"] <= current_points]
+next_df = rewards_df[rewards_df["Points"] > current_points].head(1)
+
+r1, r2, r3 = st.columns(3)
+with r1:
+    st.metric("Your points", f"{current_points} pts")
+with r2:
+    st.metric("Rewards unlocked", len(available_df))
+with r3:
+    if len(next_df):
+        next_points = int(next_df.iloc[0]["Points"])
+        st.metric("Next reward", f"{next_points} pts", f"{next_points-current_points} pts to go")
+    else:
+        st.metric("Next reward", "All unlocked 🎉")
+
+tier_order = ["STARTER", "ACTIVE", "ACHIEVER", "CHAMPION"]
+tier_icons = {
+    "STARTER": "🌱",
+    "ACTIVE": "🚀",
+    "ACHIEVER": "⭐",
+    "CHAMPION": "🏆",
+}
+
+tabs = st.tabs([f"{tier_icons[t]} {t.title()}" for t in tier_order] + ["📋 All rewards"])
+
+def render_reward_cards(df):
+    if df.empty:
+        st.info("No rewards in this tier.")
+        return
+    cols = st.columns(2, gap="medium")
+    for idx, (_, reward) in enumerate(df.iterrows()):
+        is_unlocked = int(reward["Points"]) <= current_points
+        status = "✅ UNLOCKED" if is_unlocked else "🔒 LOCKED"
+        details = "" if pd.isna(reward["Details"]) or str(reward["Details"]).strip() == "" else str(reward["Details"])
+        images = "" if pd.isna(reward["Images"]) else reward_image_html(reward["Images"])
+        opacity = "1" if is_unlocked else ".58"
+        with cols[idx % 2]:
+            st.markdown(
+                f"""
+                <div class="reward-card" style="opacity:{opacity}">
+                    <span class="reward-points">{int(reward["Points"])} PTS</span>
+                    <span class="tier-badge">{reward["Tier"]}</span>
+                    {images}
+                    <div class="reward-title">{reward["Reward"]}</div>
+                    <div class="reward-details">{details}</div>
+                    <div class="reward-details"><b>{status}</b></div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+for tab, tier in zip(tabs[:4], tier_order):
+    with tab:
+        render_reward_cards(rewards_df[rewards_df["Tier"] == tier])
+
+with tabs[4]:
+    display_df = rewards_df.copy()
+    display_df["Status"] = display_df["Points"].apply(
+        lambda x: "Unlocked" if int(x) <= current_points else "Locked"
+    )
+    st.dataframe(
+        display_df[["Points", "Tier", "Reward", "Details", "Status"]],
+        use_container_width=True,
+        hide_index=True,
+    )
+
+st.caption(
+    "Reward Wish List: rewards are examples and may vary depending on availability, "
+    "brand, color, specifications, and sponsorship."
+)
+
+st.markdown(
+    '<div class="big-quote">Experiences first. Rewards are a bonus.</div>',
+    unsafe_allow_html=True,
+)
+
 
 # EXPERIENCE MAP
 st.header("Experience Map — Lahug")
@@ -247,7 +489,7 @@ experience_spots = pd.DataFrame([
         "lat": 10.32424,
         "lon": 123.89854,
         "category": "HOME",
-        "experience": "The starting point of HIGH HOPE!: Passport distribution, orientation, and Unlock check.",
+        "experience": "The starting point of STAMP-UP!: Passport distribution, orientation, and Unlock check.",
         "status": "HOME",
         "color": [247, 181, 0],
         "radius": 130,
@@ -306,9 +548,87 @@ with map_col:
         pitch=0,
     )
 
+    home_spot = experience_spots.loc[
+        experience_spots["status"] == "HOME"
+    ].copy()
+
+    other_spots = experience_spots.loc[
+        experience_spots["status"] != "HOME"
+    ].copy()
+
+    # HOME icon (SVG)
+    home_svg = """
+    <svg xmlns="http://www.w3.org/2000/svg"
+        width="128"
+        height="128"
+        viewBox="0 0 128 128">
+
+        <!-- Yellow HOME marker -->
+        <circle
+            cx="64"
+            cy="64"
+            r="60"
+            fill="#FFD54F"
+            stroke="#FFFFFF"
+            stroke-width="6"
+        />
+
+        <!-- Flat navy house -->
+        <path
+            d="
+            M18 65
+            L64 24
+            L84 42
+            L84 30
+            L95 30
+            L95 52
+            L110 65
+            L101 75
+            L94 69
+            L94 101
+            L34 101
+            L34 69
+            L27 75
+            Z
+            "
+            fill="#143F68"
+        />
+
+        <!-- Four white windows -->
+        <rect x="50" y="64" width="11" height="11"
+            rx="1" fill="#FFFFFF"/>
+
+        <rect x="67" y="64" width="11" height="11"
+            rx="1" fill="#FFFFFF"/>
+
+        <rect x="50" y="81" width="11" height="11"
+            rx="1" fill="#FFFFFF"/>
+
+        <rect x="67" y="81" width="11" height="11"
+            rx="1" fill="#FFFFFF"/>
+
+    </svg>
+    """
+
+    home_icon_url = "data:image/svg+xml;charset=utf-8," + quote(home_svg)
+
+
+    # Add icon information to HOME data
+
+    home_spot["icon"] = [
+        {
+            "url": home_icon_url,
+            "width": 128,
+            "height": 128,
+            "anchorY": 64,
+        }
+        for _ in range(len(home_spot))
+    ]
+
+
     scatter = pdk.Layer(
         "ScatterplotLayer",
-        data=experience_spots,
+        data=other_spots,
         get_position="[lon, lat]",
         get_fill_color="color",
         get_radius="radius",
@@ -316,6 +636,42 @@ with map_col:
         stroked=True,
         get_line_color=[255, 255, 255],
         line_width_min_pixels=2,
+    )
+
+    home_icon = pdk.Layer(
+        "IconLayer",
+        data=home_spot,
+        get_position="[lon, lat]",
+        get_icon="icon",
+        get_size=48,
+        size_units="pixels",
+        pickable=True,
+    )
+
+    other_labels = pdk.Layer(
+        "TextLayer",
+        data=other_spots,
+        get_position="[lon, lat]",
+        get_text="name",
+        get_size=13,
+        get_color=[20, 55, 90],
+        get_text_anchor="'middle'",
+        get_alignment_baseline="'bottom'",
+        get_pixel_offset=[0, -12],
+        pickable=False,
+    )
+
+    home_label = pdk.Layer(
+        "TextLayer",
+        data=home_spot,
+        get_position="[lon, lat]",
+        get_text="name",
+        get_size=14,
+        get_color=[20, 55, 90],
+        get_text_anchor="'middle'",
+        get_alignment_baseline="'bottom'",
+        get_pixel_offset=[0, -32],
+        pickable=False,
     )
 
     labels = pdk.Layer(
@@ -335,7 +691,11 @@ with map_col:
     deck = pdk.Deck(
         map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
         initial_view_state=view_state,
-        layers=[scatter, labels],
+        layers=[
+            scatter,
+            home_icon,
+            labels,
+        ],
         tooltip={
             "html": """
                 <div style="font-family:Arial; max-width:290px">
@@ -345,7 +705,10 @@ with map_col:
                 {experience}
                 </div>
             """,
-            "style": {"backgroundColor": "white", "color": "#12355b"},
+            "style": {
+                "backgroundColor": "white",
+                "color": "#12355b"
+            },
         },
     )
     st.pydeck_chart(deck, use_container_width=True)
@@ -359,7 +722,7 @@ with info_col:
     <div class="card">
       <h3>🏠 HOME</h3>
       <p><b>Lahug Barangay Hall</b></p>
-      <p>Every child starts here.</p>
+      <p>Every youth starts here.</p>
       <p>① Receive your Passport<br>
       ② Choose an Experience<br>
       ③ Go out into the community<br>
@@ -391,72 +754,16 @@ st.markdown(
 )
 
 
-st.header("Try the Unlock demo")
-st.write("This demo shows how new experiences can be unlocked based on the number of completed experiences in the Passport.")
 
-completed = st.slider("Completed experiences", 0, 10, 3)
-
-if completed < 3:
-    next_unlock = 3
-    label = "🔒 Special Experience"
-elif completed < 5:
-    next_unlock = 5
-    label = "🔒 Behind-the-Scenes Experience"
-elif completed < 8:
-    next_unlock = 8
-    label = "🔒 Leadership Challenge"
-else:
-    next_unlock = 10
-    label = "🔒 Create Your Own Experience"
-
-m1, m2, m3 = st.columns(3)
-with m1:
-    st.markdown(f'<div class="metric-box"><b>{completed}</b>Experiences completed</div>', unsafe_allow_html=True)
-with m2:
-    st.markdown(f'<div class="metric-box"><b>{max(0, next_unlock-completed)}</b>Until next Unlock</div>', unsafe_allow_html=True)
-with m3:
-    st.markdown(f'<div class="metric-box"><b>{"OPEN" if completed >= 3 else "LOCKED"}</b>Unlock status</div>', unsafe_allow_html=True)
-
-st.progress(completed / 10)
-
-if completed >= 8:
-    st.success("🌟 UNLOCKED: Create Your Own Experience — Propose your own idea for the next experience you want to try.")
-elif completed >= 5:
-    st.success("🎤 UNLOCKED: Leadership Challenge — Try hosting, public speaking, event support, and other leadership challenges.")
-elif completed >= 3:
-    st.success("🏢 UNLOCKED: Special Experience — Access special programs and places children would not normally be able to experience.")
-else:
-    st.info(f"{label} — {3-completed} more Experience(s) needed")
-
-st.divider()
-
-# GROWTH LOOP
-st.header("How the project grows")
-g1, g2 = st.columns([1,1], gap="large")
-with g1:
-    st.markdown("""<div class="unlock">
-    <h3>👧 Child Unlock</h3>
-    <p>The more experiences a child completes, the more special experiences and roles are unlocked.</p>
-    <hr>
-    <h3>🏘️ Community Unlock</h3>
-    <p>As participation grows, new companies, universities, and community partners can join, unlocking entirely new experiences.</p>
-    </div>""", unsafe_allow_html=True)
-with g2:
-    st.markdown("""<div class="card">
-    <h3>Growth Loop</h3>
-    <p><b>Experience</b> → Stamp → Discover → Unlock → Share → New Partner → New Experience</p>
-    <p>The more children explore, the more opportunities the community creates.</p>
-    <p><b>The more children explore, the more opportunities the community unlocks.</b></p>
-    </div>""", unsafe_allow_html=True)
 
 st.divider()
 
 # PARTNER CTA
 st.header("For partners")
-st.write("Instead of asking companies or local partners for a large sponsorship, HIGH HOPE! starts with one simple request: “Can you unlock one new experience for our children?”")
+st.write("Instead of asking companies or local partners for a large sponsorship, STAMP-UP! starts with one simple request: “Can you unlock one new experience for our youth?”")
 st.markdown("""
 <div class="big-quote">
-Can you unlock one new experience for our children?
+Can you unlock one new experience for our youth?
 </div>
 """, unsafe_allow_html=True)
 
@@ -464,8 +771,8 @@ p1, p2, p3 = st.columns(3)
 with p1:
     st.markdown("""<div class="card"><h3>🏢 Company</h3><p>Office visits, team challenges, conversations with employees, and more.</p></div>""", unsafe_allow_html=True)
 with p2:
-    st.markdown("""<div class="card"><h3>🎓 University</h3><p>Laboratory visits, campus exploration, workshops with students, and more.</p></div>""", unsafe_allow_html=True)
+    st.markdown("""<div class="card"><h3>🌟 SK</h3><p>Connect youth with local opportunities, organize activities, and support the STAMP-UP! program.</p></div>""", unsafe_allow_html=True)
 with p3:
     st.markdown("""<div class="card"><h3>🏘️ Barangay</h3><p>Turn local places, people, and community events into opportunities for meaningful experiences.</p></div>""", unsafe_allow_html=True)
 
-st.markdown('<div class="footer-note">HIGH HOPE! demo concept • Experience Passport / Unlock System</div>', unsafe_allow_html=True)
+st.markdown('<div class="footer-note">STAMP-UP! demo concept • Experience Passport / Unlock System</div>', unsafe_allow_html=True)
