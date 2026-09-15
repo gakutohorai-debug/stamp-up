@@ -541,6 +541,9 @@ home = experience_spots.iloc[0]
 map_col, info_col = st.columns([1.45, .55], gap="large")
 
 with map_col:
+    # -------------------------
+    # Map view
+    # -------------------------
     view_state = pdk.ViewState(
         latitude=10.3255,
         longitude=123.9018,
@@ -548,7 +551,10 @@ with map_col:
         pitch=0,
     )
 
-    # HOME / other spots
+
+    # -------------------------
+    # Split HOME and other spots
+    # -------------------------
     home_spot = experience_spots.loc[
         experience_spots["status"] == "HOME"
     ].copy()
@@ -556,6 +562,28 @@ with map_col:
     other_spots = experience_spots.loc[
         experience_spots["status"] != "HOME"
     ].copy()
+
+
+    # -------------------------
+    # Load HOME PNG icon
+    # -------------------------
+    icon_path = Path(__file__).parent / "assets" / "home_icon.png"
+
+    encoded = base64.b64encode(
+        icon_path.read_bytes()
+    ).decode()
+
+    home_icon_url = f"data:image/png;base64,{encoded}"
+
+    home_spot["icon"] = [
+        {
+            "url": home_icon_url,
+            "width": 128,
+            "height": 128,
+            "anchorY": 64,
+        }
+        for _ in range(len(home_spot))
+    ]
 
 
     # -------------------------
@@ -575,39 +603,21 @@ with map_col:
 
 
     # -------------------------
-    # HOME yellow circle
+    # HOME icon
     # -------------------------
-    home_background = pdk.Layer(
-        "ScatterplotLayer",
+    home_icon = pdk.Layer(
+        "IconLayer",
         data=home_spot,
         get_position="[lon, lat]",
-        get_fill_color=[255, 213, 79],
-        get_radius=120,
+        get_icon="icon",
+        get_size=44,
+        size_units="pixels",
         pickable=True,
-        stroked=True,
-        get_line_color=[255, 255, 255],
-        line_width_min_pixels=3,
     )
 
 
     # -------------------------
-    # HOME text
-    # -------------------------
-    home_mark = pdk.Layer(
-        "TextLayer",
-        data=home_spot,
-        get_position="[lon, lat]",
-        get_text="'HOME'",
-        get_size=12,
-        get_color=[20, 63, 104],
-        get_text_anchor="'middle'",
-        get_alignment_baseline="'center'",
-        pickable=False,
-    )
-
-
-    # -------------------------
-    # Other labels
+    # Labels for normal spots
     # -------------------------
     other_labels = pdk.Layer(
         "TextLayer",
@@ -635,13 +645,13 @@ with map_col:
         get_color=[20, 55, 90],
         get_text_anchor="'middle'",
         get_alignment_baseline="'bottom'",
-        get_pixel_offset=[0, -26],
+        get_pixel_offset=[0, -30],
         pickable=False,
     )
 
 
     # -------------------------
-    # Map
+    # Deck
     # -------------------------
     deck = pdk.Deck(
         map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
@@ -649,8 +659,7 @@ with map_col:
 
         layers=[
             scatter,
-            home_background,
-            home_mark,
+            home_icon,
             other_labels,
             home_label,
         ],
@@ -658,27 +667,52 @@ with map_col:
         tooltip={
             "html": """
                 <div style="font-family:Arial; max-width:290px">
-                    <b style="font-size:15px">{name}</b><br/>
-                    <span style="color:#777">{status}</span><br/><br/>
-                    <b>{category}</b><br/>
+
+                    <b style="font-size:15px">
+                        {name}
+                    </b>
+
+                    <br/>
+
+                    <span style="color:#777">
+                        {status}
+                    </span>
+
+                    <br/><br/>
+
+                    <b>
+                        {category}
+                    </b>
+
+                    <br/>
+
                     {experience}
+
                 </div>
             """,
 
             "style": {
                 "backgroundColor": "white",
-                "color": "#12355b"
+                "color": "#12355b",
             },
         },
     )
 
+
+    # -------------------------
+    # Show map
+    # -------------------------
     st.pydeck_chart(
         deck,
-        use_container_width=True
+        use_container_width=True,
     )
 
+
+    # -------------------------
+    # Caption
+    # -------------------------
     st.caption(
-        "HOME = Lahug Barangay Hall　 ● Potential Experience Spots"
+        "🏠 HOME = Lahug Barangay Hall   ● Potential Experience Spots"
     )
 
 with info_col:
