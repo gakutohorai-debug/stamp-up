@@ -548,6 +548,7 @@ with map_col:
         pitch=0,
     )
 
+    # HOME / other spots
     home_spot = experience_spots.loc[
         experience_spots["status"] == "HOME"
     ].copy()
@@ -556,76 +557,10 @@ with map_col:
         experience_spots["status"] != "HOME"
     ].copy()
 
-    # HOME icon (SVG)
-    home_svg = """
-    <svg xmlns="http://www.w3.org/2000/svg"
-        width="128"
-        height="128"
-        viewBox="0 0 128 128">
 
-        <!-- Yellow HOME marker -->
-        <circle
-            cx="64"
-            cy="64"
-            r="60"
-            fill="#FFD54F"
-            stroke="#FFFFFF"
-            stroke-width="6"
-        />
-
-        <!-- Flat navy house -->
-        <path
-            d="
-            M18 65
-            L64 24
-            L84 42
-            L84 30
-            L95 30
-            L95 52
-            L110 65
-            L101 75
-            L94 69
-            L94 101
-            L34 101
-            L34 69
-            L27 75
-            Z
-            "
-            fill="#143F68"
-        />
-
-        <!-- Four white windows -->
-        <rect x="50" y="64" width="11" height="11"
-            rx="1" fill="#FFFFFF"/>
-
-        <rect x="67" y="64" width="11" height="11"
-            rx="1" fill="#FFFFFF"/>
-
-        <rect x="50" y="81" width="11" height="11"
-            rx="1" fill="#FFFFFF"/>
-
-        <rect x="67" y="81" width="11" height="11"
-            rx="1" fill="#FFFFFF"/>
-
-    </svg>
-    """
-
-    home_icon_url = "data:image/svg+xml;charset=utf-8," + quote(home_svg)
-
-
-    # Add icon information to HOME data
-
-    home_spot["icon"] = [
-        {
-            "url": home_icon_url,
-            "width": 128,
-            "height": 128,
-            "anchorY": 64,
-        }
-        for _ in range(len(home_spot))
-    ]
-
-
+    # -------------------------
+    # Other experience spots
+    # -------------------------
     scatter = pdk.Layer(
         "ScatterplotLayer",
         data=other_spots,
@@ -638,16 +573,42 @@ with map_col:
         line_width_min_pixels=2,
     )
 
-    home_icon = pdk.Layer(
-        "IconLayer",
+
+    # -------------------------
+    # HOME yellow circle
+    # -------------------------
+    home_background = pdk.Layer(
+        "ScatterplotLayer",
         data=home_spot,
         get_position="[lon, lat]",
-        get_icon="icon",
-        get_size=48,
-        size_units="pixels",
+        get_fill_color=[255, 213, 79],
+        get_radius=120,
         pickable=True,
+        stroked=True,
+        get_line_color=[255, 255, 255],
+        line_width_min_pixels=3,
     )
 
+
+    # -------------------------
+    # HOME text
+    # -------------------------
+    home_mark = pdk.Layer(
+        "TextLayer",
+        data=home_spot,
+        get_position="[lon, lat]",
+        get_text="'HOME'",
+        get_size=12,
+        get_color=[20, 63, 104],
+        get_text_anchor="'middle'",
+        get_alignment_baseline="'center'",
+        pickable=False,
+    )
+
+
+    # -------------------------
+    # Other labels
+    # -------------------------
     other_labels = pdk.Layer(
         "TextLayer",
         data=other_spots,
@@ -661,6 +622,10 @@ with map_col:
         pickable=False,
     )
 
+
+    # -------------------------
+    # HOME label
+    # -------------------------
     home_label = pdk.Layer(
         "TextLayer",
         data=home_spot,
@@ -670,51 +635,50 @@ with map_col:
         get_color=[20, 55, 90],
         get_text_anchor="'middle'",
         get_alignment_baseline="'bottom'",
-        get_pixel_offset=[0, -32],
+        get_pixel_offset=[0, -26],
         pickable=False,
     )
 
-    labels = pdk.Layer(
-        "TextLayer",
-        data=experience_spots,
-        get_position="[lon, lat]",
-        get_text="name",
-        get_size=13,
-        get_color=[20, 55, 90],
-        get_angle=0,
-        get_text_anchor="'middle'",
-        get_alignment_baseline="'bottom'",
-        get_pixel_offset=[0, -12],
-        pickable=False,
-    )
 
+    # -------------------------
+    # Map
+    # -------------------------
     deck = pdk.Deck(
         map_style="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
         initial_view_state=view_state,
+
         layers=[
             scatter,
-            home_icon,
-            labels,
+            home_background,
+            home_mark,
+            other_labels,
+            home_label,
         ],
+
         tooltip={
             "html": """
                 <div style="font-family:Arial; max-width:290px">
-                <b style="font-size:15px">{name}</b><br/>
-                <span style="color:#777">{status}</span><br/><br/>
-                <b>{category}</b><br/>
-                {experience}
+                    <b style="font-size:15px">{name}</b><br/>
+                    <span style="color:#777">{status}</span><br/><br/>
+                    <b>{category}</b><br/>
+                    {experience}
                 </div>
             """,
+
             "style": {
                 "backgroundColor": "white",
                 "color": "#12355b"
             },
         },
     )
-    st.pydeck_chart(deck, use_container_width=True)
+
+    st.pydeck_chart(
+        deck,
+        use_container_width=True
+    )
 
     st.caption(
-        "🟡 HOME = Lahug Barangay Hall　 🟢/🟣/🔵/🟠 = Potential Experience Spots"
+        "HOME = Lahug Barangay Hall　 ● Potential Experience Spots"
     )
 
 with info_col:
